@@ -1,15 +1,17 @@
-import pytest
-from typing import Tuple, List
+from typing import List, Tuple
 
+import pytest
 from src.parser import Bypasser
 
 
 @pytest.fixture
-def parser() -> Bypasser:
-    return Bypasser('./src/constant.yaml')
+def sample(request):
+    with open(request.param, 'r') as streamer:
+        base, *urls = streamer.read().splitlines()
+        return base, urls
 
 
-@pytest.mark.usefixtures('parser')
+@pytest.mark.usefixtures('parser', 'sample')
 class TestGenerateCurls:
     @pytest.mark.parametrize(
         'sample',

@@ -1,8 +1,7 @@
 import pytest
+from src.parser import Bypasser
 
 
 @pytest.fixture
-def sample(request):
-    with open(request.param, 'r') as streamer:
-        base, *urls = streamer.read().splitlines()
-        return base, urls
+def parser() -> Bypasser:
+    return Bypasser('./src/constant.yaml')
