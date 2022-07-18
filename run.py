@@ -57,3 +57,4 @@ if __name__ == '__main__':
     curls = bypasser.generate_curls(config.url, config.header)
     response = bypasser.run_curl(curls[0], timeout=10.1)
     responses = bypasser.run_curls(curls, config.timeout, config.threads)
+    bypasser.save(config.outdir, responses)

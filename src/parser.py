@@ -1,10 +1,10 @@
+import hashlib
 import logging
 import re
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import yaml
 
@@ -102,12 +102,13 @@ class Bypasser:
         # Sanitize and debug-print
         return sorted(list(curls))
 
-    def run_curl(self, curl: str, timeout: float) -> Optional[str]:
+    def run_curl(self, curl: str, timeout: float) -> Dict[str, str]:
+        logger.info(f'run_curl: {curl}')
         try:
             response = subprocess.check_output(
                 ['sh', '-c', curl], timeout=timeout
             ).decode()
-            return f'{curl}\n{response}'
+            return {curl: f'{curl}\n{response}'}
         except subprocess.CalledProcessError as e:
             logger.warning(
                 f'command "{e.cmd}" returned non-zero error code {e.returncode}: {e.output}'
@@ -116,11 +117,44 @@ class Bypasser:
             logger.warning(
                 f'command "{e.cmd}" timed out: {e.output}'
             )
+        return dict()
 
-    def run_curls(self, curls: List[str], timeout: float, max_workers: int = 1):
+    def run_curls(self, curls: List[str], timeout: float, max_workers: int = 1) -> Dict[str, str]:
         def run_timeout(curl: str) -> str:
             return self.run_curl(curl, timeout)
 
+        responses = dict()
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            yield from executor.map(run_timeout, curls)
+            for response in executor.map(run_timeout, curls):
+                responses.update(response)
             executor.shutdown(wait=True)
+        return responses
+
+    def save(self, path: Path, responses: Dict[str, str]):
+        log = dict()
+        padding = len(str(max([_.count(" ") for _ in responses.values()], default=0)))
+        for cmd, response in responses.items():
+            cmd_hash = hashlib.md5(cmd.encode()).hexdigest()
+            filename = f'bypass-{cmd_hash}.html'
+            with open(path / filename, 'w') as streamer:
+                streamer.write(response)
+
+            request = response[response.find('\n') + 1:]
+            n_words = request.count(' ')
+            n_lines = request.count('\n')
+            unique_key = f'{n_words:{padding}}:{n_lines:{padding}}'
+            log[unique_key] = filename
+
+        log = dict(sorted(log.items()))
+
+        log_output = '\n'.join(
+            f'{stats}: {filename}' for stats, filename in log.items()
+        )
+        logger.info(f'Saving html pages and short output in: {str(path)}')
+        logger.info(f'Triaged results & distinct pages:\n{log_output}')
+        files_output = ','.join(log.values())
+        inspect_cmd = f'echo {str(path)}/{{{files_output}}} | xargs bat'
+        logger.info(f'Also, inspect them manually with batcat:\n{inspect_cmd}')
+
+        with open(f'{str(path)}/triaged-bypass.log', 'w') as streamer:
+            streamer.write(f'{log}\n{inspect_cmd}')
