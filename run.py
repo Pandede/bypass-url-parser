@@ -55,5 +55,5 @@ if __name__ == '__main__':
     )
     bypasser = Bypasser()
     curls = bypasser.generate_curls(config.url, config.header)
-    response = bypasser.run_curl(config.url, timeout=10.1)
+    response = bypasser.run_curl(curls[0], timeout=10.1)
     responses = bypasser.run_curls(curls, config.timeout, config.threads)
