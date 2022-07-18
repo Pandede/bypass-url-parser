@@ -1,8 +1,9 @@
 from ipaddress import IPv4Address
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Dict, Optional
 
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field, HttpUrl, PositiveInt, validator
 
 DESCRIPTION = '''
 Bypass Url Parser, made with love by @TheLaluka
@@ -16,8 +17,8 @@ class Config(BaseModel):
     version: str = VERSION
     url: HttpUrl
     outdir: Path
-    timeout: int
-    threads: int
+    timeout: PositiveInt
+    threads: PositiveInt
     header: Dict[str, str] = Field(default_factory=dict)
     spoofip: Optional[IPv4Address]
     debug: bool
@@ -27,3 +28,11 @@ class Config(BaseModel):
         if not url.endswith('/'):
             return f'{url}/'
         return url
+
+    @validator('outdir', pre=True)
+    def build_tempfile(cls, outdir: Optional[Path]) -> Path:
+        if outdir:
+            return outdir
+
+        temp_dir = TemporaryDirectory()
+        return Path(f'{temp_dir.name}-bypass-url-parser')
