@@ -40,7 +40,7 @@ if __name__ == '__main__':
     arg_parser.add_argument('-h', '--help', action='help', help='Show help, you are here :)')
     arg_parser.add_argument('-v', '--version', action='version', version=f'%(prog)s {VERSION}', help='Show version info')
     arg_parser.add_argument('--url', type=str, required=True, help='URL (path is optional) to run bypasses against.')
-    arg_parser.add_argument('--outdir', type=str, required=True, help='Output directory for results.')
+    arg_parser.add_argument('--outdir', type=str, help='Output directory for results.')
     arg_parser.add_argument('--timeout', type=int, default=3, help='Request times out after N seconds [Default: 3].')
     arg_parser.add_argument('--threads', type=int, default=1, help='Scan with N parallel threads [Default: 1].')
     arg_parser.add_argument('--header', action='append', nargs=2, metavar=('key', 'value'), default=dict(), help='Header(s) to use, format: "--header Cookie can_i_haz=fire".')
@@ -53,8 +53,8 @@ if __name__ == '__main__':
     coloredlogs.install(
         logger=logger, level=logging.DEBUG if config.debug else logging.INFO
     )
+
     bypasser = Bypasser()
     curls = bypasser.generate_curls(config.url, config.header)
-    response = bypasser.run_curl(curls[0], timeout=10.1)
     responses = bypasser.run_curls(curls, config.timeout, config.threads)
     bypasser.save(config.outdir, responses)
