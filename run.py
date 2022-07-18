@@ -23,10 +23,13 @@ Example:
     ./bypass-url-parser.py --url "http://127.0.0.1/juicy_403_endpoint/" --threads 30 --timeout 5 --header "Cookie: me_iz=damin" --header "Waf: bypazzzzz"
 """
 
+import logging
 from argparse import ArgumentParser, RawTextHelpFormatter
 
-from src.parser import Bypasser
+import coloredlogs
+
 from src.config import DESCRIPTION, VERSION, Config
+from src.parser import Bypasser
 
 if __name__ == '__main__':
     arg_parser = ArgumentParser(
@@ -46,5 +49,11 @@ if __name__ == '__main__':
     opt = arg_parser.parse_args()
     config = Config.parse_obj(vars(opt))
 
+    logger = logging.getLogger('bup')
+    coloredlogs.install(
+        logger=logger, level=logging.DEBUG if config.debug else logging.INFO
+    )
     bypasser = Bypasser()
     curls = bypasser.generate_curls(config.url, config.header)
+    response = bypasser.run_curl(config.url, timeout=10.1)
+    responses = bypasser.run_curls(curls, config.timeout, config.threads)

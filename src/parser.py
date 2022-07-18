@@ -1,9 +1,14 @@
+import logging
 import re
+import subprocess
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-import ipdb
 import yaml
+
+logger = logging.getLogger('bup')
 
 
 class Bypasser:
@@ -94,3 +99,26 @@ class Bypasser:
 
         # Sanitize and debug-print
         return sorted(list(curls))
+
+    def run_curl(self, curl: str, timeout: float) -> Optional[str]:
+        try:
+            response = subprocess.check_output(
+                ['sh', '-c', curl], timeout=timeout
+            ).decode()
+            return f'{curl}\n{response}'
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f'command "{e.cmd}" returned non-zero error code {e.returncode}: {e.output}'
+            )
+        except subprocess.TimeoutExpired as e:
+            logger.warning(
+                f'command "{e.cmd}" timed out: {e.output}'
+            )
+
+    def run_curls(self, curls: List[str], timeout: float, max_workers: int = 1):
+        def run_timeout(curl: str) -> str:
+            return self.run_curl(curl, timeout)
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            yield from executor.map(run_timeout, curls)
+            executor.shutdown(wait=True)
