@@ -16,6 +16,7 @@ class TestGenerateCurls:
         [
             './test/sample/domain_only.txt',
             './test/sample/domain_with_path.txt',
+            './test/sample/domain_with_paths.txt'
         ],
         indirect=True
     )
