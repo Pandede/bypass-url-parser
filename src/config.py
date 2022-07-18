@@ -1,9 +1,8 @@
 from ipaddress import IPv4Address
 from pathlib import Path
-import re
 from typing import Dict, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, HttpUrl, validator
 
 DESCRIPTION = '''
 Bypass Url Parser, made with love by @TheLaluka
@@ -15,7 +14,7 @@ VERSION = '0.1.0'
 class Config(BaseModel):
     description: str = DESCRIPTION
     version: str = VERSION
-    url: str
+    url: HttpUrl
     outdir: Path
     timeout: int
     threads: int
@@ -24,9 +23,7 @@ class Config(BaseModel):
     debug: bool
 
     @validator('url')
-    def check_url_validity(cls, url: str) -> str:
-        if not re.match(r'^https?://[^/]+/', url, re.IGNORECASE):
-            raise ValueError(
-                'Url must start with http:// or https:// and contain at least 3 slashes'
-            )
+    def check_ending_slash(cls, url: HttpUrl) -> HttpUrl:
+        if not url.endswith('/'):
+            return f'{url}/'
         return url
