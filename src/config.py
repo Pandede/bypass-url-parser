@@ -17,6 +17,7 @@ class Config(BaseModel):
     version: str = VERSION
     url: HttpUrl
     outdir: Path
+    constant: Path
     timeout: PositiveInt
     threads: PositiveInt
     header: Dict[str, str] = Field(default_factory=dict)
@@ -30,9 +31,9 @@ class Config(BaseModel):
         return url
 
     @validator('outdir', pre=True)
-    def build_tempfile(cls, outdir: Optional[Path]) -> Path:
-        if outdir:
-            return outdir
-
-        temp_dir = TemporaryDirectory()
-        return Path(f'{temp_dir.name}-bypass-url-parser')
+    def build_output_directory(cls, outdir: Optional[Path]) -> Path:
+        if outdir is None:
+            temp_dir = TemporaryDirectory()
+            outdir = Path(f'{temp_dir.name}-bypass-url-parser')
+        outdir.mkdir(parents=True, exist_ok=True)
+        return outdir
