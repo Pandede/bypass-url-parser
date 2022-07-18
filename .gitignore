@@ -1,1 +1,4 @@
 .py3
+venv
+.vscode
+__pycache__
